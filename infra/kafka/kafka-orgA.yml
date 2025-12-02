@@ -21,6 +21,9 @@ services:
   kafka-A:
     hostname: kafka-A
     container_name: kafka-A
+    restart: always
+    depends_on:
+      - zookeeper-1
     networks:
       - kafka-cluster
     image: confluentinc/cp-kafka:7.4.4
@@ -35,4 +38,37 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-
+  connect-A:
+    image: confluentinc/cp-kafka-connect:7.4.4
+    container_name: connect-A
+    restart: always
+    depends_on:
+      - kafka-A
+    networks:
+      - kafka-cluster
+    ports:
+      - "8084:8084"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka-A:9092
+      CONNECT_LISTENERS: http://0.0.0.0:8084
+      CONNECT_GROUP_ID: connect-cluster-A
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-configs-A
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets-A
+      CONNECT_STATUS_STORAGE_TOPIC: connect-status-A
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_REST_ADVERTISED_HOST_NAME: connect-A
+      CONNECT_PLUGIN_PATH: /usr/share/java,/opt/connectors
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8084/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./connectors:/opt/connectors
+      - ./secrets:/etc/secrets:ro

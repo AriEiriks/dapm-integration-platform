@@ -1,0 +1,16 @@
+{
+  "name": "gcs-source-connector",
+  "config": {
+    "connector.class": "io.lenses.streamreactor.connect.gcp.storage.source.GCPStorageSourceConnector",
+    "tasks.max": "1",
+
+    "connect.gcpstorage.kcql": "INSERT INTO dsb-topic SELECT * FROM dapm-streams-data:dsb/Lokalbane_940R/2025/11/05 STOREAS `json`;",
+
+    "connect.gcpstorage.gcp.auth.mode": "File",
+    "connect.gcpstorage.gcp.file": "/etc/secrets/dapm-bucketviewer.json",
+    "connect.gcpstorage.gcp.project.id": "dapm-streams-data",
+
+    "connect.gcpstorage.source.extension.includes": "Json",
+    "connect.gcpstorage.source.partition.search.continuous": "false"
+  }
+}
