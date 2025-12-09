@@ -1,0 +1,43 @@
+package com.dapm.security_service.services;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class KafkaConnectClient {
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String baseUrl;
+
+    public KafkaConnectClient(@Value("${dapm.kafka-connect.base-url}") String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public List<String> getConnectorNames() {
+        String url = baseUrl + "/connectors";
+        ResponseEntity<List<String>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<String>>() {}
+        );
+        return response.getBody();
+    }
+
+    public Map<String, Object> getConnectorInfo(String name) {
+        String url = baseUrl + "/connectors/" + name;
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<Map<String, Object>>() {}
+        );
+        return response.getBody();
+    }
+}

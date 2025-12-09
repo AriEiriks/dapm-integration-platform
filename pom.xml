@@ -50,6 +50,12 @@
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka</artifactId>
 		</dependency>
+		<!-- Add this: Reactor Kafka for reactor.kafka.receiver.* -->
+		<dependency>
+			<groupId>io.projectreactor.kafka</groupId>
+			<artifactId>reactor-kafka</artifactId>
+			<version>1.3.25</version>
+		</dependency>
 		<dependency>
 			<groupId>com.github.dapm-thesis</groupId>
 			<artifactId>dapm-pipeline</artifactId>
