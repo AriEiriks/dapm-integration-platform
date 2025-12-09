@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class KafkaConnectClient {
@@ -39,5 +40,15 @@ public class KafkaConnectClient {
                 new ParameterizedTypeReference<Map<String, Object>>() {}
         );
         return response.getBody();
+    }
+
+    public void createConnector(String name, Map<String, String> config) {
+        String url = baseUrl + "/connectors";
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("name", name);
+        payload.put("config", config);
+
+        restTemplate.postForEntity(url, payload, Map.class);
     }
 }
