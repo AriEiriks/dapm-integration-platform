@@ -32,4 +32,10 @@ public class ExternalSourceController {
                 Map.of("message", "External source connector created successfully")
         );
     }
+
+    @DeleteMapping("/connectors/{name}")
+    public ResponseEntity<Void> deleteConnector(@PathVariable String name) {
+        externalSourceService.deleteConnector(name);
+        return ResponseEntity.noContent().build(); // 204
+    }
 }

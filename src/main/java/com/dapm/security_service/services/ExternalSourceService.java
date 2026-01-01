@@ -88,4 +88,8 @@ public class ExternalSourceService {
 
         kafkaConnectClient.createConnector(request.getName(), connectorConfig);
     }
+
+    public void deleteConnector(String connectorName) {
+        kafkaConnectClient.deleteConnector(connectorName);
+    }
 }

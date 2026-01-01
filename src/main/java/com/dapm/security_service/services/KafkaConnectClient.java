@@ -6,6 +6,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 import java.util.Map;
@@ -50,5 +52,11 @@ public class KafkaConnectClient {
         payload.put("config", config);
 
         restTemplate.postForEntity(url, payload, Map.class);
+    }
+
+    public void deleteConnector(String name) {
+        String encoded = URLEncoder.encode(name, StandardCharsets.UTF_8);
+        String url = baseUrl + "/connectors/" + name;
+        restTemplate.delete(url);
     }
 }
