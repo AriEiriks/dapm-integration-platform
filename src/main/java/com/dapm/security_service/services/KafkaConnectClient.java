@@ -3,23 +3,32 @@ package com.dapm.security_service.services;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 @Service
 public class KafkaConnectClient {
-    private final RestTemplate restTemplate = new RestTemplate();
+
+    private final RestTemplate restTemplate;
+    private final WebClient webClient;
     private final String baseUrl;
 
-    public KafkaConnectClient(@Value("${dapm.kafka-connect.base-url}") String baseUrl) {
+    public KafkaConnectClient(
+            @Value("${dapm.kafka-connect.base-url}") String baseUrl,
+            WebClient kafkaConnectWebClient
+    ) {
         this.baseUrl = baseUrl;
+        this.restTemplate = new RestTemplate(); //  for GET/POST for now
+        this.webClient = kafkaConnectWebClient; // for DELETE because of 415
     }
 
     public List<String> getConnectorNames() {
@@ -55,8 +64,14 @@ public class KafkaConnectClient {
     }
 
     public void deleteConnector(String name) {
-        String encoded = URLEncoder.encode(name, StandardCharsets.UTF_8);
-        String url = baseUrl + "/connectors/" + name;
-        restTemplate.delete(url);
+        String encoded = UriUtils.encodePathSegment(name, StandardCharsets.UTF_8);
+
+        webClient
+                .delete()
+                .uri(baseUrl + "/connectors/" + encoded)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
     }
 }

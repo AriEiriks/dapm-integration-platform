@@ -36,6 +36,6 @@ public class ExternalSourceController {
     @DeleteMapping("/connectors/{name}")
     public ResponseEntity<Void> deleteConnector(@PathVariable String name) {
         externalSourceService.deleteConnector(name);
-        return ResponseEntity.noContent().build(); // 204
+        return ResponseEntity.noContent().build();
     }
 }
