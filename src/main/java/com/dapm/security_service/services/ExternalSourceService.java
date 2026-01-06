@@ -1,5 +1,6 @@
 package com.dapm.security_service.services;
 
+import com.dapm.security_service.models.dtos.ConnectorPluginDto;
 import com.dapm.security_service.models.dtos.CreateExternalSourceRequest;
 import com.dapm.security_service.models.dtos.ExternalSourceDto;
 import org.springframework.stereotype.Service;
@@ -91,5 +92,9 @@ public class ExternalSourceService {
 
     public void deleteConnector(String connectorName) {
         kafkaConnectClient.deleteConnector(connectorName);
+    }
+
+    public List<ConnectorPluginDto> getConnectorPlugins() {
+        return kafkaConnectClient.getConnectorPlugins();
     }
 }

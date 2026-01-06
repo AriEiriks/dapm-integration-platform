@@ -2,6 +2,7 @@ package com.dapm.security_service.controllers.ClientApi;
 
 import com.dapm.security_service.models.dtos.ExternalSourceDto;
 import com.dapm.security_service.models.dtos.CreateExternalSourceRequest;
+import com.dapm.security_service.models.dtos.ConnectorPluginDto;
 import com.dapm.security_service.services.ExternalSourceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,5 +38,10 @@ public class ExternalSourceController {
     public ResponseEntity<Void> deleteConnector(@PathVariable String name) {
         externalSourceService.deleteConnector(name);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/plugins")
+    public ResponseEntity<List<ConnectorPluginDto>> listConnectorPlugins() {
+        return ResponseEntity.ok(externalSourceService.getConnectorPlugins());
     }
 }

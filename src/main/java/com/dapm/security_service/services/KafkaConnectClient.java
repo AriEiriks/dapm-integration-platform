@@ -14,6 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.dapm.security_service.models.dtos.ConnectorPluginDto;
 
 @Service
 public class KafkaConnectClient {
@@ -73,5 +76,34 @@ public class KafkaConnectClient {
                 .retrieve()
                 .toBodilessEntity()
                 .block();
+    }
+
+    public List<ConnectorPluginDto> getConnectorPlugins() {
+        String url = baseUrl + "/connector-plugins";
+
+        ResponseEntity<List<Map<String, Object>>> response =
+                restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        null,
+                        new ParameterizedTypeReference<>() {}
+                );
+
+        List<Map<String, Object>> body = response.getBody();
+        if (body == null) return List.of();
+
+        return body.stream()
+                .filter(m -> {
+                    Object clazzObj = m.get("class");
+                    if (clazzObj == null) return false;
+                    String clazz = String.valueOf(clazzObj);
+                    return !clazz.startsWith("org.apache.kafka.connect.mirror.");
+                })
+                .map(m -> new ConnectorPluginDto(
+                        String.valueOf(m.get("class")),
+                        String.valueOf(m.get("type")),
+                        m.get("version") == null ? null : String.valueOf(m.get("version"))
+                ))
+                .collect(Collectors.toList());
     }
 }
