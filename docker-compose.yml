@@ -45,20 +45,6 @@ services:
       - orgb_data:/var/lib/postgresql/data
     networks:
       - dapm_network
-  postgres_orgc:
-    image: postgres:14
-    container_name: dapm_postgres_orgc
-    environment:
-      POSTGRES_USER: orgc_user
-      POSTGRES_PASSWORD: orgc_pass
-      POSTGRES_DB: orgc_db
-    ports:
-      - "5435:5432"
-    volumes:
-      - orgc_data:/var/lib/postgresql/data
-    networks:
-      - dapm_network
-
 
   mongo_orga:
     image: mongo:6
@@ -89,22 +75,6 @@ services:
       - mongo_orgb_data:/data/db
     networks:
       - dapm_network
-
-  mongo_orgc:
-    image: mongo:6
-    container_name: mongo-orgc
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: dapm_user
-      MONGO_INITDB_ROOT_PASSWORD: 123456
-      MONGO_INITDB_DATABASE: dapm_mapping_table
-    ports:
-      - "27019:27017"
-    volumes:
-      - mongo_orgc_data:/data/db
-    networks:
-      - dapm_network
-
 
   dapm_orga:
     build: .
@@ -178,46 +148,12 @@ services:
       - dapm_network
       - kafka-cluster
 
-  dapm_orgc:
-    build: .
-    container_name: orgc
-    environment:
-      - dapm.defaultOrgName=orgC
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://dapm_postgres_orgc:5432/orgc_db
-      - SPRING_DATASOURCE_USERNAME=orgc_user
-      - SPRING_DATASOURCE_PASSWORD=orgc_pass
-      - spring.jpa.hibernate.ddl-auto=update
-      - spring.jpa.show-sql=true
-      - runtime.templates.root=/runtime-templates
-      - runtime.configs.root=/runtime-configs
-      - ORG_KEYSTORE_PATH=/run/keys/signing-keystore.p12
-      - ORG_KEYSTORE_PASS=OrgcPass789
-      - ORG_KEY_ALIAS=orgc-2025-08
-      - ORG_KID=OrgC#2025-08
-
-      # === point to Kafka inside docker network (NOT localhost) ===
-      - organization.broker.port=kafka-C:9072
-      - SPRING_DATA_MONGODB_URI=mongodb://dapm_user:123456@mongo-orgc:27017/dapm_mapping_table
-    volumes:
-      - ./runtime-templates/orgc:/runtime-templates
-      - ./runtime-configs/orgc:/runtime-configs
-      - ./secrets/orgc/signing-keystore.p12:/run/keys/signing-keystore.p12:ro
-    ports:
-      - "8083:8080"  # Expose as 8083 externally
-    depends_on:
-      - postgres_orgc
-    networks:
-      - dapm_network
-      - kafka-cluster
-
 volumes:
   orga_data:
   orgb_data:
-  orgc_data:
   pgadmin_orga_data:
   mongo_orga_data:
   mongo_orgb_data:
-  mongo_orgc_data:
 
 networks:
   dapm_network:
