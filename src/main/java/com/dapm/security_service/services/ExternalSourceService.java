@@ -64,30 +64,7 @@ public class ExternalSourceService {
     }
 
     public void createExternalSource(CreateExternalSourceRequest request) {
-        Map<String, String> connectorConfig = new HashMap<>();
-
-        String kcql = null;
-        if (request.getConfig() != null) {
-            kcql = request.getConfig().get("connect.gcpstorage.kcql");
-        }
-
-        if (kcql == null || kcql.isBlank()) {
-            throw new IllegalArgumentException("KCQL must be provided as config['connect.gcpstorage.kcql'].");
-        }
-
-        connectorConfig.put("connector.class", "io.lenses.streamreactor.connect.gcp.storage.source.GCPStorageSourceConnector");
-        connectorConfig.put("tasks.max", "1");
-
-        connectorConfig.put("connect.gcpstorage.kcql", kcql);
-
-        connectorConfig.put("connect.gcpstorage.gcp.auth.mode", "File");
-        connectorConfig.put("connect.gcpstorage.gcp.file", "/etc/secrets/dapm-bucketviewer.json");
-        connectorConfig.put("connect.gcpstorage.gcp.project.id", "dapm-streams-data");
-
-        connectorConfig.put("connect.gcpstorage.source.extension.includes", "Json");
-        connectorConfig.put("connect.gcpstorage.source.partition.search.continuous", "false");
-
-        kafkaConnectClient.createConnector(request.getName(), connectorConfig);
+        kafkaConnectClient.createConnector(request.getName(), request.getConfig());
     }
 
     public void deleteConnector(String connectorName) {
@@ -96,5 +73,10 @@ public class ExternalSourceService {
 
     public List<ConnectorPluginDto> getConnectorPlugins() {
         return kafkaConnectClient.getConnectorPlugins();
+    }
+
+    // Return ALL config definitions (required + optional).
+    public List<Map<String, Object>> getConnectorPluginConfigDefs(String connectorClass) {
+        return kafkaConnectClient.getConnectorPluginConfig(connectorClass);
     }
 }

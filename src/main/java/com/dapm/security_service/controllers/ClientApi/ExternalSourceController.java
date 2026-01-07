@@ -34,6 +34,13 @@ public class ExternalSourceController {
         );
     }
 
+    @GetMapping("/plugins/{connectorClass}/config-defs")
+    public ResponseEntity<List<Map<String, Object>>> getPluginConfigDefs(
+            @PathVariable String connectorClass
+    ) {
+        return ResponseEntity.ok(externalSourceService.getConnectorPluginConfigDefs(connectorClass));
+    }
+
     @DeleteMapping("/connectors/{name}")
     public ResponseEntity<Void> deleteConnector(@PathVariable String name) {
         externalSourceService.deleteConnector(name);

@@ -106,4 +106,14 @@ public class KafkaConnectClient {
                 ))
                 .collect(Collectors.toList());
     }
+
+    public List<Map<String, Object>> getConnectorPluginConfig(String connectorClass) {
+        String url = baseUrl + "/connector-plugins/" + connectorClass + "/config";
+        return restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<Map<String, Object>>>() {}
+        ).getBody();
+    }
 }
