@@ -3,6 +3,7 @@ package com.dapm.security_service.controllers.ClientApi;
 import com.dapm.security_service.models.dtos.ExternalSourceDto;
 import com.dapm.security_service.models.dtos.CreateExternalSourceRequest;
 import com.dapm.security_service.models.dtos.ConnectorPluginDto;
+import com.dapm.security_service.models.dtos.ConnectorStatusDto;
 import com.dapm.security_service.services.ExternalSourceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -70,4 +71,22 @@ public class ExternalSourceController {
                 externalSourceService.updateExternalSourceConfig(name, config)
         );
     }
+
+    @PutMapping("/connectors/{name}/pause")
+    public ResponseEntity<Void> pauseConnector(@PathVariable String name) {
+        externalSourceService.pauseConnector(name);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/connectors/{name}/resume")
+    public ResponseEntity<Void> resumeConnector(@PathVariable String name) {
+        externalSourceService.resumeConnector(name);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/connectors/{name}/status")
+    public ResponseEntity<ConnectorStatusDto> getConnectorStatus(@PathVariable String name) {
+        return ResponseEntity.ok(externalSourceService.getConnectorStatus(name));
+    }
+
 }

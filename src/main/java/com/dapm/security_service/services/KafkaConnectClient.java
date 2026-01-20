@@ -142,4 +142,36 @@ public class KafkaConnectClient {
                 new ParameterizedTypeReference<Map<String, String>>() {}
         ).getBody();
     }
+
+    public void pauseConnector(String name) {
+        String url = baseUrl + "/connectors/" + name + "/pause";
+        restTemplate.exchange(
+                url,
+                HttpMethod.PUT,
+                HttpEntity.EMPTY,
+                Void.class
+        );
+    }
+
+    public void resumeConnector(String name) {
+        String url = baseUrl + "/connectors/" + name + "/resume";
+        restTemplate.exchange(
+                url,
+                HttpMethod.PUT,
+                HttpEntity.EMPTY,
+                Void.class
+        );
+    }
+
+    public Map<String, Object> getConnectorStatus(String name) {
+        String url = baseUrl + "/connectors/" + name + "/status";
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<Map<String, Object>>() {}
+        );
+        return response.getBody();
+    }
+
 }

@@ -3,6 +3,7 @@ package com.dapm.security_service.services;
 import com.dapm.security_service.models.dtos.ConnectorPluginDto;
 import com.dapm.security_service.models.dtos.CreateExternalSourceRequest;
 import com.dapm.security_service.models.dtos.ExternalSourceDto;
+import com.dapm.security_service.models.dtos.ConnectorStatusDto;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,11 +20,6 @@ public class ExternalSourceService {
         this.kafkaConnectClient = kafkaConnectClient;
     }
 
-    /**
-     * List external source connectors by querying Kafka Connect.
-     * Currently this returns all connectors of type "source"
-     * mapping needs work
-     */
     public List<ExternalSourceDto> listExternalSources() {
         List<String> connectorNames = kafkaConnectClient.getConnectorNames();
         List<ExternalSourceDto> result = new ArrayList<>();
@@ -89,4 +85,62 @@ public class ExternalSourceService {
     ) {
         return kafkaConnectClient.updateConnectorConfig(connectorName, config);
     }
+
+    // pause/resume
+    public void pauseConnector(String connectorName) {
+        kafkaConnectClient.pauseConnector(connectorName);
+    }
+
+    public void resumeConnector(String connectorName) {
+        kafkaConnectClient.resumeConnector(connectorName);
+    }
+    
+    public ConnectorStatusDto getConnectorStatus(String connectorName) {
+        Map<String, Object> raw = kafkaConnectClient.getConnectorStatus(connectorName);
+
+        String state = "UNKNOWN";
+
+        if (raw != null) {
+            boolean anyTaskFailed = false;
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> tasks = (List<Map<String, Object>>) raw.get("tasks");
+            if (tasks != null) {
+                for (Map<String, Object> t : tasks) {
+                    Object s = t.get("state");
+                    if (s != null && "FAILED".equalsIgnoreCase(String.valueOf(s))) {
+                        anyTaskFailed = true;
+                        break;
+                    }
+                }
+            }
+
+            if (anyTaskFailed) {
+                state = "FAILED";
+            } else {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> connector = (Map<String, Object>) raw.get("connector");
+                Object connectorState = connector != null ? connector.get("state") : null;
+                if (connectorState != null) {
+                    state = String.valueOf(connectorState);
+                }
+            }
+        }
+
+        state = normalizeState(state);
+
+        return new ConnectorStatusDto(connectorName, state);
+    }
+
+    private String normalizeState(String state) {
+        if (state == null) return "UNKNOWN";
+        String s = state.toUpperCase();
+
+        if (s.equals("RUNNING")) return "RUNNING";
+        if (s.equals("PAUSED")) return "PAUSED";
+        if (s.equals("FAILED")) return "FAILED";
+
+        return "UNKNOWN";
+    }
+
 }
