@@ -51,4 +51,23 @@ public class ExternalSourceController {
     public ResponseEntity<List<ConnectorPluginDto>> listConnectorPlugins() {
         return ResponseEntity.ok(externalSourceService.getConnectorPlugins());
     }
+
+    @GetMapping("/connectors/{name}/config")
+    public ResponseEntity<Map<String, String>> getConnectorConfig(
+            @PathVariable String name
+    ) {
+        return ResponseEntity.ok(
+                externalSourceService.getExternalSourceConfig(name)
+        );
+    }
+
+    @PutMapping("/connectors/{name}/config")
+    public ResponseEntity<Map<String, String>> updateConnectorConfig(
+            @PathVariable String name,
+            @RequestBody Map<String, String> config
+    ) {
+        return ResponseEntity.ok(
+                externalSourceService.updateExternalSourceConfig(name, config)
+        );
+    }
 }

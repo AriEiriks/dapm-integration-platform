@@ -2,6 +2,7 @@ package com.dapm.security_service.services;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -114,6 +115,31 @@ public class KafkaConnectClient {
                 HttpMethod.GET,
                 null,
                 new ParameterizedTypeReference<List<Map<String, Object>>>() {}
+        ).getBody();
+    }
+
+    public Map<String, String> getConnectorConfig(String connectorName) {
+        String url = baseUrl + "/connectors/" + connectorName + "/config";
+
+        return restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<Map<String, String>>() {}
+        ).getBody();
+    }
+
+    public Map<String, String> updateConnectorConfig(
+            String connectorName,
+            Map<String, String> config
+    ) {
+        String url = baseUrl + "/connectors/" + connectorName + "/config";
+
+        return restTemplate.exchange(
+                url,
+                HttpMethod.PUT,
+                new HttpEntity<>(config),
+                new ParameterizedTypeReference<Map<String, String>>() {}
         ).getBody();
     }
 }

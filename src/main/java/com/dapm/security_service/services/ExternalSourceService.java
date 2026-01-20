@@ -75,8 +75,18 @@ public class ExternalSourceService {
         return kafkaConnectClient.getConnectorPlugins();
     }
 
-    // Return ALL config definitions (required + optional).
     public List<Map<String, Object>> getConnectorPluginConfigDefs(String connectorClass) {
         return kafkaConnectClient.getConnectorPluginConfig(connectorClass);
+    }
+
+    public Map<String, String> getExternalSourceConfig(String connectorName) {
+        return kafkaConnectClient.getConnectorConfig(connectorName);
+    }
+
+    public Map<String, String> updateExternalSourceConfig(
+            String connectorName,
+            Map<String, String> config
+    ) {
+        return kafkaConnectClient.updateConnectorConfig(connectorName, config);
     }
 }
