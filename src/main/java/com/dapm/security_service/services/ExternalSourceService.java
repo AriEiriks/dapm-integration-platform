@@ -1,34 +1,58 @@
 package com.dapm.security_service.services;
 
+import com.dapm.security_service.models.Pipeline;
 import com.dapm.security_service.models.dtos.ConnectorPluginDto;
+import com.dapm.security_service.models.dtos.ConnectorStatusDto;
 import com.dapm.security_service.models.dtos.CreateExternalSourceRequest;
 import com.dapm.security_service.models.dtos.ExternalSourceDto;
-import com.dapm.security_service.models.dtos.ConnectorStatusDto;
+import com.dapm.security_service.models.enums.PipelinePhase;
+import com.dapm.security_service.models.models2.ValidatedPipelineConfig;
+import com.dapm.security_service.repositories.PipelineRepositoryy;
+import com.dapm.security_service.repositories.ValidatePipelineRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 public class ExternalSourceService {
 
     private final KafkaConnectClient kafkaConnectClient;
 
+    private final PipelineRepositoryy pipelineRepository;
+    private final ValidatePipelineRepository validatePipelineRepository;
+    private final ObjectMapper objectMapper;
+
     private static final Pattern KCQL_INSERT_INTO =
             Pattern.compile("(?i)\\bINSERT\\s+INTO\\s+([^\\s]+)");
 
-    public ExternalSourceService(KafkaConnectClient kafkaConnectClient) {
+    public ExternalSourceService(
+            KafkaConnectClient kafkaConnectClient,
+            PipelineRepositoryy pipelineRepository,
+            ValidatePipelineRepository validatePipelineRepository,
+            ObjectMapper objectMapper
+    ) {
         this.kafkaConnectClient = kafkaConnectClient;
+        this.pipelineRepository = pipelineRepository;
+        this.validatePipelineRepository = validatePipelineRepository;
+        this.objectMapper = objectMapper;
     }
 
     public List<ExternalSourceDto> listExternalSources() {
         List<String> connectorNames = kafkaConnectClient.getConnectorNames();
         List<ExternalSourceDto> result = new ArrayList<>();
+
+        // ✅ compute once
+        Map<String, Set<String>> executingPipelineTopics = getExecutingPipelineTopics();
 
         if (connectorNames == null) {
             return result;
@@ -49,16 +73,144 @@ public class ExternalSourceService {
             String connectorClass = config != null ? config.getOrDefault("connector.class", "") : "";
             String publishedTopics = resolvePublishedTopics(connectorClass, config);
 
+            // which executing pipelines reference these topics
+            List<String> usedByPipelines = computeUsedByPipelines(publishedTopics, executingPipelineTopics);
+
             ExternalSourceDto dto = new ExternalSourceDto(
                     name,
                     type,
                     connectorClass,
-                    publishedTopics
+                    publishedTopics,
+                    usedByPipelines
             );
             result.add(dto);
         }
 
         return result;
+    }
+
+    private Map<String, Set<String>> getExecutingPipelineTopics() {
+        List<Pipeline> pipelines = pipelineRepository.findAll();
+        if (pipelines == null || pipelines.isEmpty()) return Collections.emptyMap();
+
+        Map<String, Set<String>> out = new HashMap<>();
+
+        for (Pipeline p : pipelines) {
+            if (p == null) continue;
+            if (p.getPipelinePhase() != PipelinePhase.EXECUTING) continue;
+
+            String pipelineName = p.getName();
+            if (pipelineName == null || pipelineName.isBlank()) continue;
+
+            ValidatedPipelineConfig cfg = validatePipelineRepository.getPipeline(pipelineName);
+            if (cfg == null) {
+                out.put(pipelineName, Collections.emptySet());
+                continue;
+            }
+
+            String json = cfg.getPipelineJson();
+            if (json == null || json.isBlank()) {
+                out.put(pipelineName, Collections.emptySet());
+                continue;
+            }
+
+            out.put(pipelineName, extractTopicsFromJson(json));
+        }
+
+        return out;
+    }
+
+    private Set<String> extractTopicsFromJson(String json) {
+        try {
+            JsonNode root = objectMapper.readTree(json);
+            Set<String> topics = new HashSet<>();
+            collectTopicValues(root, topics);
+            return topics;
+        } catch (Exception e) {
+            return Collections.emptySet();
+        }
+    }
+
+    private void collectTopicValues(JsonNode node, Set<String> out) {
+        if (node == null || node.isNull()) return;
+
+        if (node.isObject()) {
+            node.fields().forEachRemaining(entry -> {
+                String key = entry.getKey();
+                JsonNode val = entry.getValue();
+
+                if (isTopicKey(key)) addTopicValue(val, out);
+                collectTopicValues(val, out); // recurse
+            });
+            return;
+        }
+
+        if (node.isArray()) {
+            for (JsonNode child : node) collectTopicValues(child, out);
+        }
+    }
+
+    private boolean isTopicKey(String key) {
+        if (key == null) return false;
+        String k = key.trim().toLowerCase();
+        return k.equals("topic")
+                || k.equals("topics")
+                || k.endsWith("topic")
+                || (k.contains("kafka") && k.contains("topic"));
+    }
+
+    private void addTopicValue(JsonNode val, Set<String> out) {
+        if (val == null || val.isNull()) return;
+
+        if (val.isTextual()) {
+            splitAndAdd(val.asText(), out);
+            return;
+        }
+
+        if (val.isArray()) {
+            for (JsonNode c : val) {
+                if (c != null && c.isTextual()) splitAndAdd(c.asText(), out);
+            }
+        }
+    }
+
+    private void splitAndAdd(String raw, Set<String> out) {
+        if (raw == null) return;
+        String trimmed = raw.trim();
+        if (trimmed.isBlank()) return;
+
+        for (String part : trimmed.split(",")) {
+            String t = part.trim();
+            if (!t.isBlank()) out.add(t);
+        }
+    }
+
+    private List<String> computeUsedByPipelines(
+            String connectorTopicsCsv,
+            Map<String, Set<String>> executingPipelineTopics
+    ) {
+        if (connectorTopicsCsv == null || connectorTopicsCsv.isBlank()) return Collections.emptyList();
+        if (executingPipelineTopics == null || executingPipelineTopics.isEmpty()) return Collections.emptyList();
+
+        Set<String> connectorTopics = new HashSet<>();
+        splitAndAdd(connectorTopicsCsv, connectorTopics);
+        if (connectorTopics.isEmpty()) return Collections.emptyList();
+
+        List<String> usedBy = new ArrayList<>();
+
+        for (Map.Entry<String, Set<String>> e : executingPipelineTopics.entrySet()) {
+            Set<String> pipelineTopics = e.getValue();
+            if (pipelineTopics == null || pipelineTopics.isEmpty()) continue;
+
+            for (String topic : connectorTopics) {
+                if (pipelineTopics.contains(topic)) {
+                    usedBy.add(e.getKey()); // pipeline name
+                    break;
+                }
+            }
+        }
+
+        return usedBy;
     }
 
     private String resolvePublishedTopics(String connectorClass, Map<String, String> config) {

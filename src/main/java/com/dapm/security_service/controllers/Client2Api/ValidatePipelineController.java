@@ -67,6 +67,7 @@ public class ValidatePipelineController {
 
         ValidatedPipeline validatedPipeline = new ValidatedPipeline(contents, configURI);
         ValidatedPipelineConfig validatedPipelineConfig = createValidatedPipelineConfig(validatedPipeline);
+        validatedPipelineConfig.setPipelineJson(contents);
         validatedPipelineConfig.setPipelineName(designPipelineDto.getPipelineName());
         validatedPipelineConfig.setProjectName(designPipelineDto.getProjectName());
         validatePipelineRepository.storePipeline(designPipelineDto.getPipelineName(), validatedPipelineConfig);

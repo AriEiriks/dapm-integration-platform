@@ -12,6 +12,7 @@ public class ValidatedPipelineConfig {
     private String projectName;
     private String pipelineName;
     private ValidatedPipeline validatedPipeline;
+    private String pipelineJson;
     private List<String> externalPEs;
     private final Map<String, String> externalPEsTokens = new HashMap<>();
 
