@@ -10,11 +10,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class ExternalSourceService {
 
     private final KafkaConnectClient kafkaConnectClient;
+
+    private static final Pattern KCQL_INSERT_INTO =
+            Pattern.compile("(?i)\\bINSERT\\s+INTO\\s+([^\\s]+)");
 
     public ExternalSourceService(KafkaConnectClient kafkaConnectClient) {
         this.kafkaConnectClient = kafkaConnectClient;
@@ -37,26 +43,63 @@ public class ExternalSourceService {
             Object typeObj = info.get("type");
             String type = typeObj != null ? typeObj.toString() : "";
 
-            if (!"source".equalsIgnoreCase(type)) {
-                continue;
-            }
-
             @SuppressWarnings("unchecked")
             Map<String, String> config = (Map<String, String>) info.get("config");
 
             String connectorClass = config != null ? config.getOrDefault("connector.class", "") : "";
-            String topics = config != null ? config.getOrDefault("topics", "") : "";
+            String publishedTopics = resolvePublishedTopics(connectorClass, config);
 
             ExternalSourceDto dto = new ExternalSourceDto(
                     name,
                     type,
                     connectorClass,
-                    topics
+                    publishedTopics
             );
             result.add(dto);
         }
 
         return result;
+    }
+
+    private String resolvePublishedTopics(String connectorClass, Map<String, String> config) {
+        if (config == null) return "";
+
+        // Specific case: GCPStorage
+        if (connectorClass != null && connectorClass.toLowerCase().contains("gcpstorage")) {
+            String kcql = config.getOrDefault("connect.gcpstorage.kcql",
+                    config.getOrDefault("connect.gcpstorage.kcql".toLowerCase(), ""));
+            if (kcql == null || kcql.isBlank()) return "";
+
+            // Split by ';' (multiple statements possible)
+            List<String> topics = new ArrayList<>();
+            for (String stmt : kcql.split(";")) {
+                String topic = extractInsertIntoTopic(stmt);
+                if (topic != null && !topic.isBlank()) topics.add(topic);
+            }
+
+            // return comma-separated
+            return String.join(",", topics);
+        }
+
+        // Default case: uses "topic"
+        String topic = config.get("topic");
+        if (topic != null && !topic.isBlank()) return topic;
+
+        return "";
+    }
+
+    private String extractInsertIntoTopic(String kcqlStatement) {
+        if (kcqlStatement == null) return null;
+        Matcher m = KCQL_INSERT_INTO.matcher(kcqlStatement.trim());
+        if (!m.find()) return null;
+
+        String raw = m.group(1).trim();
+
+        if ((raw.startsWith("`") && raw.endsWith("`")) || (raw.startsWith("\"") && raw.endsWith("\""))) {
+            raw = raw.substring(1, raw.length() - 1);
+        }
+
+        return raw;
     }
 
     public void createExternalSource(CreateExternalSourceRequest request) {
@@ -94,7 +137,7 @@ public class ExternalSourceService {
     public void resumeConnector(String connectorName) {
         kafkaConnectClient.resumeConnector(connectorName);
     }
-    
+
     public ConnectorStatusDto getConnectorStatus(String connectorName) {
         Map<String, Object> raw = kafkaConnectClient.getConnectorStatus(connectorName);
 

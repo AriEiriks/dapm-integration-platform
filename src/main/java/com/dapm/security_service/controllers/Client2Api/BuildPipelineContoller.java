@@ -1,5 +1,9 @@
 package com.dapm.security_service.controllers.Client2Api;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+
 import candidate_validation.ValidatedPipeline;
 import com.dapm.security_service.models.Pipeline;
 import com.dapm.security_service.models.dtos2.designpipeline.DesignPipelineDto;
@@ -19,6 +23,8 @@ import pipeline.service.PipelineExecutionService;
 @RestController
 @RequestMapping("/api/build-pipeline")
 public class BuildPipelineContoller {
+    private static final Logger log =
+            LoggerFactory.getLogger(BuildPipelineContoller.class);
     @Autowired private PipelineRepositoryy pipelineRepository;
     @Autowired private ValidatePipelineRepository validatePipelineRepository;
     @Autowired private PipelineBuilder pipelineBuilder;
@@ -47,13 +53,34 @@ public class BuildPipelineContoller {
             return ResponseEntity.badRequest().body("Pipeline is not validated");
         }
 
-        pipelineBuilder.buildPipeline(validatedPipeline.getPipelineName(), validatedPipeline.getValidatedPipeline(), validatedPipeline.getExternalPEsTokens());
+        try {
+
+            pipelineBuilder.buildPipeline(
+                    pipelineName,
+                    validatedPipeline.getValidatedPipeline(),
+                    validatedPipeline.getExternalPEsTokens()
+            );
+
+        } catch (Exception e) {
+            log.error("BUILD_PIPELINE failed for pipelineName={}", pipelineName, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Build failed: " + e.getMessage());
+        }
+
+
+        //pipelineBuilder.buildPipeline(validatedPipeline.getPipelineName(), validatedPipeline.getValidatedPipeline(), validatedPipeline.getExternalPEsTokens());
         // update pipeline phase to BUILT
+
+
+
         pipeline.setPipelinePhase(PipelinePhase.BUILT);
         pipelineRepository.save(pipeline);
         // return ok
         return ResponseEntity.ok("Pipeline built successfully");
     }
+
+
+
 
     @PreAuthorize("@pipelineAccessEvaluator.hasPermission(#pipelineName, authentication, 'EXECUTE_PIPELINE')")
     @PostMapping("/execute/{pipelineName}")
