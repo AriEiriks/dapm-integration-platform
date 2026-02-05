@@ -158,9 +158,15 @@ public  class PeAccessRequest {
         Pipeline pipeline = pipelineRepository.findByName(pipelineName).
                 orElseThrow(() -> new IllegalArgumentException("Pipeline Not Found"));
 
+        String orgName = pipeline.getOwnerOrganization().getName();
+
         // Collect partner-owned processing elements with their org names
         var partnerElements = pipeline.getProcessingElements().stream()
-                .filter(pe -> pe.getOwnerPartnerOrganization() != null)
+                .filter(pe ->
+                        pe.getOwnerPartnerOrganization() != null
+                                && pe.getOwnerOrganization() == null
+                                && !pe.getOwnerPartnerOrganization().getName().equalsIgnoreCase(orgName)
+                )
                 .map(pe -> new MissingPermissionsDto(
                         pe.getTemplateId(),
                         pe.getOwnerPartnerOrganization().getName()))
@@ -173,7 +179,11 @@ public  class PeAccessRequest {
         } else {
             // Load actual partner-owned elements
             var partnerElementsEntities = pipeline.getProcessingElements().stream()
-                    .filter(pe -> pe.getOwnerPartnerOrganization() != null)
+                    .filter(pe ->
+                            pe.getOwnerPartnerOrganization() != null
+                                    && pe.getOwnerOrganization() == null
+                                    && !pe.getOwnerPartnerOrganization().getName().equalsIgnoreCase(orgName)
+                    )
                     .collect(Collectors.toList());
 
             // Collect missing elements: those with no PENDING request

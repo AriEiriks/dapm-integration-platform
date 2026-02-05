@@ -44,6 +44,9 @@ public class BuildPipelineContoller {
         if (pipeline.getPipelinePhase().equals(PipelinePhase.BUILT)){
             return ResponseEntity.badRequest().body("Pipeline is already built");
         }
+
+        System.out.println("[BUILD] pipeline=" + pipelineName + " phase=" + pipeline.getPipelinePhase());
+
         if (!pipeline.getPipelinePhase().equals(PipelinePhase.CONFIGURED)){
             // return bad request
             return ResponseEntity.badRequest().body("Pipeline is not in CONFIGURED phase");

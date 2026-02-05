@@ -104,7 +104,11 @@ public class ValidatePipelineController {
         updatePeInstanceNumbers(validatedPipeline);
 
         processingElements.stream()
-                .filter(pe -> pe.getOwnerPartnerOrganization() != null)
+                .filter(pe ->
+                        pe.getOwnerPartnerOrganization() != null
+                                && pe.getOwnerOrganization() == null
+                                && !pe.getOwnerPartnerOrganization().getName().equalsIgnoreCase(orgName)
+                )
                 .forEach(pe -> {
                     PipelineProcessingElementInstance instance = PipelineProcessingElementInstance.builder()
 //                    .id(UUID.randomUUID())

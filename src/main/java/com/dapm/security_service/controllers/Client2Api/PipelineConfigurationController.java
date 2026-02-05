@@ -67,10 +67,28 @@ public class PipelineConfigurationController {
     public ResponseEntity<ConfigureValidationDto> checkConfiguration(@PathVariable String pipelineName) {
         ConfigureValidationDto configStatus = getConfiguration(pipelineName);
 
+        if (configStatus != null
+                && "VALID".equals(configStatus.getStatus())
+                && (configStatus.getMissingPermissions() == null
+                || configStatus.getMissingPermissions().isEmpty())) {
+
+            Pipeline pipeline = pipelineRepository.findByName(pipelineName)
+                    .orElseThrow(() -> new IllegalArgumentException("Pipeline Not Found"));
+
+            if (!PipelinePhase.CONFIGURED.equals(pipeline.getPipelinePhase())) {
+                System.out.println("[CONF AUTO] Promoting pipeline " + pipelineName
+                        + " from " + pipeline.getPipelinePhase()
+                        + " -> CONFIGURED");
+                pipeline.setPipelinePhase(PipelinePhase.CONFIGURED);
+                pipelineRepository.save(pipeline);
+            }
+        }
+
         return configStatus != null
                 ? ResponseEntity.ok(configStatus)
                 : ResponseEntity.notFound().build();
     }
+
 
     @PreAuthorize("@pipelineAccessEvaluator.hasPermission(#requestDto.getPipelineName(), authentication, 'ACCESS_REQUEST_PE')")
     @PostMapping("/request")
@@ -263,9 +281,41 @@ public class PipelineConfigurationController {
         Pipeline pipeline = pipelineRepo.findByName(pipelineName).
                 orElseThrow(() -> new IllegalArgumentException("Pipeline Not Found"));
 
+        String currentOrgName = pipeline.getOwnerOrganization().getName();
+
+        System.out.println("[PIPELINE CONF] pipeline=" + pipeline.getName());
+        System.out.println("[PIPELINE CONF] pipelineOwner=" + currentOrgName);
+
+        for (ProcessingElement pe : pipeline.getProcessingElements()) {
+            String ownerOrg = pe.getOwnerOrganization() == null
+                    ? "null"
+                    : pe.getOwnerOrganization().getName();
+
+            String partnerOrg = pe.getOwnerPartnerOrganization() == null
+                    ? "null"
+                    : pe.getOwnerPartnerOrganization().getName();
+
+            boolean requiresPermission =
+                    pe.getOwnerPartnerOrganization() != null
+                            && pe.getOwnerOrganization() == null
+                            && partnerOrg != null
+                            && !partnerOrg.equalsIgnoreCase(currentOrgName);
+
+            System.out.println("[PIPELINE CONF] PE=" + pe.getTemplateId()
+                    + " ownerOrg=" + ownerOrg
+                    + " partnerOrg=" + partnerOrg
+                    + " requiresPermission=" + requiresPermission);
+        }
+
         // Collect partner-owned processing elements with their org names
         var partnerElements = pipeline.getProcessingElements().stream()
-                .filter(pe -> pe.getOwnerPartnerOrganization() != null)
+                .filter(pe ->
+                        pe.getOwnerPartnerOrganization() != null
+                                && pe.getOwnerOrganization() == null
+                                && pe.getOwnerPartnerOrganization().getName() != null
+                                && !pe.getOwnerPartnerOrganization().getName()
+                                .equalsIgnoreCase(currentOrgName)
+                )
                 .map(pe -> new MissingPermissionsDto(
                         pe.getTemplateId(),
                         pe.getOwnerPartnerOrganization().getName()))
@@ -283,12 +333,24 @@ public class PipelineConfigurationController {
         } else {
             // Load actual partner-owned elements
             var partnerElementsEntities = pipeline.getProcessingElements().stream()
-                    .filter(pe -> pe.getOwnerPartnerOrganization() != null)
+                    .filter(pe ->
+                            pe.getOwnerPartnerOrganization() != null
+                                    && pe.getOwnerOrganization() == null
+                                    && pe.getOwnerPartnerOrganization().getName() != null
+                                    && !pe.getOwnerPartnerOrganization().getName()
+                                    .equalsIgnoreCase(currentOrgName)
+                    )
                     .collect(Collectors.toList());
 
             // Collect missing elements: those with no PENDING request
             List<MissingPermissionsDto> missingPermissions = pipeline.getProcessingElements().stream()
-                    .filter(pe -> pe.getOwnerPartnerOrganization() != null)
+                    .filter(pe ->
+                            pe.getOwnerPartnerOrganization() != null
+                                    && pe.getOwnerOrganization() == null
+                                    && pe.getOwnerPartnerOrganization().getName() != null
+                                    && !pe.getOwnerPartnerOrganization().getName()
+                                    .equalsIgnoreCase(currentOrgName)
+                    )
                     .filter(pe -> !pipelinePeReqRepo
                             .existsByPipelineNameAndPipelineProcessingElementInstanceAndStatus(
                                     pipeline.getName(),
