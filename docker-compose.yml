@@ -106,6 +106,7 @@ services:
         # NEW: host folder for outputs
       - ./outputs/orga:/runtime-outputs
       - ./secrets/orga/signing-keystore.p12:/run/keys/signing-keystore.p12:ro
+      - ${DATA_DIR}:/data
     ports:
       - "8081:8080"  # Mapping internal port 8080 to external port 8081
     depends_on:

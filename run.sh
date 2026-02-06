@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export DATA_DIR="${REPO_ROOT}/infra/kafka/data"
+echo "Using DATA_DIR=${DATA_DIR}"
 
 # 1) Ensure shared external network
 if ! docker network inspect kafka-cluster >/dev/null 2>&1; then
