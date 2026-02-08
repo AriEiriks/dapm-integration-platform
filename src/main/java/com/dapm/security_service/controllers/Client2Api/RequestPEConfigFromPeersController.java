@@ -1,7 +1,6 @@
 package com.dapm.security_service.controllers.Client2Api;
 
 import com.dapm.security_service.models.PublisherOrganization;
-import com.dapm.security_service.models.Tiers;
 import com.dapm.security_service.models.dtos2.GetPeerRequest;
 import com.dapm.security_service.models.enums.PeType;
 import com.dapm.security_service.models.enums.Tier;
@@ -25,100 +24,110 @@ public class RequestPEConfigFromPeersController {
     @Value("${runtime.configs.root:/runtime-configs}")
     private String rootDir;
 
-    @Value("${peer.sync.scheme:http}")
-    private String syncScheme;
+    @Value("${PEER_ORGA_URL:}")
+    private String peerOrgaUrl;   // e.g. http://130.225.70.65:8081
 
-    @Value("${peer.sync.port:8080}")
-    private int syncPort;
+    @Value("${PEER_ORGB_URL:}")
+    private String peerOrgbUrl;   // e.g. http://192.168.8.132:8082
 
-    // 🔹 updated to point to JSON endpoint instead of /zip
     @Value("${peer.sync.path:/peer/availablePeConfigs}")
     private String syncPath;
 
-    @Autowired
-    private ProcessingElementRepository processingElementRepository;
-
-    @Autowired
-    private PublisherOrganizationRepository publisherOrganizationRepository;
-
-    @Autowired
-    private TiersRepository tiersRepository;
-    @Autowired
-    private TokenService tokenService;
+    @Autowired private ProcessingElementRepository processingElementRepository;
+    @Autowired private PublisherOrganizationRepository publisherOrganizationRepository;
+    @Autowired private TiersRepository tiersRepository;
+    @Autowired private TokenService tokenService;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private String buildPeerUrl(String orgName) {
-        return String.format("%s://%s:%d%s", syncScheme, orgName.toLowerCase(), syncPort, syncPath);
+    // ✅ Builds ONLY sync URL (NOT execution URL)
+    private String buildPeerSyncUrl(String orgName) {
+        String base = switch (orgName.toLowerCase()) {
+            case "orga" -> peerOrgaUrl;
+            case "orgb" -> peerOrgbUrl;
+            default -> throw new IllegalArgumentException("Unknown organization: " + orgName);
+        };
+
+        return base + syncPath;  // e.g. http://130.225.70.65:8081/peer/availablePeConfigs
+    }
+
+    // ✅ Returns pure runtime base URL
+    private String getRuntimeHost(String orgName) {
+        return switch (orgName.toLowerCase()) {
+            case "orga" -> peerOrgaUrl;   // http://130.225.70.65:8081
+            case "orgb" -> peerOrgbUrl;   // http://192.168.8.132:8082
+            default -> throw new IllegalArgumentException("Unknown organization: " + orgName);
+        };
     }
 
     @PostMapping("/sync-peer-configs")
     public ResponseEntity<?> syncFromPeer(@RequestBody SyncRequest req) throws Exception {
-        String url = buildPeerUrl(req.orgName());
 
-        // 🔑 Generate token for handshake
+        // ✅ Sync URL (NOT runtime)
+        String syncUrl = buildPeerSyncUrl(req.orgName());
+
         String jwtA = tokenService.generateHandshakeToken(300);
         GetPeerRequest body = new GetPeerRequest();
         body.setToken(jwtA);
 
-        // 🔑 Call peer API expecting JSON response
-        PeerConfigsResponse response = restTemplate.postForObject(url, body, PeerConfigsResponse.class);
+        // ✅ Fetch pe configs from peer
+        PeerConfigsResponse response = restTemplate.postForObject(syncUrl, body, PeerConfigsResponse.class);
 
         if (response == null || response.items == null || response.items.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body(new SyncResult(0, List.of(), "Peer returned no configs"));
         }
 
-        // Ensure target dir exists
         Path root = Path.of(rootDir).toAbsolutePath().normalize();
         Files.createDirectories(root);
 
         List<String> savedFiles = new ArrayList<>();
 
         for (PeerConfigItem item : response.items) {
-            if (!item.found || item.schema == null) {
-                continue; // skip missing files
-            }
 
-            // Save file to runtime-configs
+            if (!item.found || item.schema == null) continue;
+
+            // ✅ Save schema file
             Path dest = root.resolve(item.fileName).normalize();
-            if (!dest.startsWith(root)) continue; // prevent path traversal
+            if (!dest.startsWith(root)) continue;
+
             Files.createDirectories(dest.getParent());
             Files.writeString(dest, item.schema, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
             savedFiles.add(item.fileName);
 
-            // Save PE metadata to DB
             PublisherOrganization org = publisherOrganizationRepository.findByName(req.orgName())
                     .orElseThrow(() -> new IllegalArgumentException("Organization not found: " + req.orgName()));
 
-//            Tiers tierEntity=tiersRepository.findByName(item.tier)
-//                    .orElseThrow(() -> new IllegalArgumentException("Tier not found: " + item.tier));
+            // ✅ This is the correct runtime host for pipeline execution
+            String runtimeHost = getRuntimeHost(req.orgName());
 
-            com.dapm.security_service.models.ProcessingElement peB =
+            // ✅ Save PE metadata
+            com.dapm.security_service.models.ProcessingElement pe =
                     com.dapm.security_service.models.ProcessingElement.builder()
                             .id(UUID.randomUUID())
                             .ownerPartnerOrganization(org)
                             .templateId(item.templateId)
                             .tier(item.tier)
-                            .instanceNumber(0)
                             .inputs(item.inputs)
                             .output(item.output)
-                            .configSchema(item.schema)
+                            .instanceNumber(0)
                             .processingElementType(item.processingElementType)
-                            .hostURL("http://"+org.getName().toLowerCase()+":8080")
+                            .configSchema(item.schema)
+                            .hostURL(runtimeHost)   // ✅ Correct host URL (NO sync path)
                             .build();
 
-            processingElementRepository.save(peB);
+            processingElementRepository.save(pe);
         }
 
         return ResponseEntity.ok(new SyncResult(savedFiles.size(), savedFiles, "ok"));
     }
 
-    // Request/Response DTOs
+    // === DTOs ===
     public record SyncRequest(String orgName) {}
+
     public record SyncResult(int savedCount, List<String> savedFiles, String status) {}
 
-    // Peer response mapping
     public static class PeerConfigsResponse {
         public String organization;
         public int count;

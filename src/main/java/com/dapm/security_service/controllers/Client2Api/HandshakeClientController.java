@@ -3,7 +3,6 @@ package com.dapm.security_service.controllers.Client2Api;
 import com.dapm.security_service.controllers.PeerApi.PeerHandshakeController;
 import com.dapm.security_service.models.PublisherOrganization;
 import com.dapm.security_service.models.enums.SubscriptionTier;
-import com.dapm.security_service.models.enums.Tier;
 import com.dapm.security_service.repositories.PublisherOrganizationRepository;
 import com.dapm.security_service.security.CustomUserDetails;
 import com.dapm.security_service.services.TokenService;
@@ -37,19 +36,22 @@ public class HandshakeClientController {
     @Autowired
     private TokenVerificationService verificationService;
 
-    // Instead of a fixed URL, keep only the static parts configurable.
-    // We'll inject orgName at runtime to form: {scheme}://{orgName}:{port}{path}
-    @Value("${peer.handshake.scheme:http}")
-    private String handshakeScheme;
-
-    @Value("${peer.handshake.port:8080}")
-    private int handshakePort;
-
-    @Value("${peer.handshake.path:/api/peer/handshake}")
-    private String handshakePath;
-
     @Autowired
     private PublisherOrganizationRepository publisherOrganizationRepository;
+
+    @Value("${PEER_ORGA_URL:}")
+    private String peerOrgaUrl;   // http://130.225.70.65:8081
+
+    @Value("${PEER_ORGB_URL:}")
+    private String peerOrgbUrl;   // http://192.168.8.132:8082
+
+    private String getPeerBaseUrl(String orgName) {
+        return switch (orgName.toLowerCase()) {
+            case "orga" -> peerOrgaUrl;
+            case "orgb" -> peerOrgbUrl;
+            default -> throw new IllegalArgumentException("Unknown organization: " + orgName);
+        };
+    }
 
     @PostMapping("")
     @PreAuthorize("hasAuthority('CREATE_PROJECT')")
@@ -59,77 +61,73 @@ public class HandshakeClientController {
     ) {
         Map<String, Object> body = new HashMap<>();
 
-        if (orgName == null || orgName.orgName.isBlank()) {
+        if (orgName == null || orgName.orgName().isBlank()) {
             body.put("success", false);
-            body.put("message", "Organization name is required in the request body.");
+            body.put("message", "Organization name is required.");
             return ResponseEntity.badRequest().body(body);
         }
 
         try {
-            HandshakeResult result = sendHandshake(orgName.orgName.trim());
+            HandshakeResult result = sendHandshake(orgName.orgName().trim());
 
             if (result.success) {
                 body.put("success", true);
                 body.put("message", "Partnership established.");
                 body.put("requestedOrg", orgName.orgName().trim());
                 body.put("verifiedOrg", result.verifiedOrg);
-                body.put("details", "Handshake completed and partner recorded.");
                 return ResponseEntity.ok(body);
             } else {
                 body.put("success", false);
-                body.put("message", "Failed to establish partnership.");
                 body.put("requestedOrg", orgName.orgName().trim());
                 body.put("error", result.errorMessage);
                 return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
             }
+
         } catch (Exception ex) {
             body.put("success", false);
             body.put("message", "Unexpected error during handshake.");
-            body.put("requestedOrg", orgName.orgName().trim());
             body.put("error", ex.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
         }
     }
 
-    private String buildPeerUrl(String orgName) {
-        // Example: http://{orgName}:8080/api/peer/handshake
-        return String.format("%s://%s:%d%s", handshakeScheme, orgName.toLowerCase(), handshakePort, handshakePath);
-    }
-
     private synchronized HandshakeResult sendHandshake(String orgName) {
         try {
-            // a) Create handshake token
-            String jwtA = tokenService.generateHandshakeToken(300);
-            System.out.println("Generated handshake token: " +jwtA);
-            // b) Build request payload
-            PeerHandshakeController.HandshakeRequest req = new PeerHandshakeController.HandshakeRequest();
-            req.setToken(jwtA);
+            // 1) Create handshake JWT
+            String token = tokenService.generateHandshakeToken(300);
 
-            // c) Call peer handshake endpoint with dynamic org host
-            String url = buildPeerUrl(orgName);
+            PeerHandshakeController.HandshakeRequest request =
+                    new PeerHandshakeController.HandshakeRequest();
+            request.setToken(token);
+
+            // 2) Build correct handshake URL
+            String url = getPeerBaseUrl(orgName) + "/api/peer/handshake";
+
             ResponseEntity<PeerHandshakeController.HandshakeResponse> response =
-                    restTemplate.postForEntity(url, req, PeerHandshakeController.HandshakeResponse.class);
+                    restTemplate.postForEntity(url, request, PeerHandshakeController.HandshakeResponse.class);
+
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+
                 Integer maxHours = response.getBody().getMaxHours();
+
                 publisherOrganizationRepository.findByName(orgName)
-                        .orElseGet(() -> publisherOrganizationRepository.save(
-                                new PublisherOrganization(UUID.randomUUID(), orgName, SubscriptionTier.FREE, maxHours)
-                        ));
+                        .orElseGet(() ->
+                                publisherOrganizationRepository.save(
+                                        new PublisherOrganization(UUID.randomUUID(), orgName, SubscriptionTier.FREE, maxHours)
+                                ));
 
                 return HandshakeResult.ok(orgName + " (maxHours=" + maxHours + ")");
-            } else {
-                return HandshakeResult.fail("Peer handshake failed with status: " + response.getStatusCode());
             }
 
-        } catch (RestClientException rce) {
-            return HandshakeResult.fail("HTTP error calling peer: " + rce.getMessage());
+            return HandshakeResult.fail("Peer responded with status: " + response.getStatusCode());
+
+        } catch (RestClientException e) {
+            return HandshakeResult.fail("HTTP error calling peer: " + e.getMessage());
         } catch (Exception ex) {
             return HandshakeResult.fail("Handshake failed: " + ex.getMessage());
         }
     }
 
-
-    // Simple internal result holder (no new file)
     private static class HandshakeResult {
         final boolean success;
         final String verifiedOrg;
@@ -148,6 +146,7 @@ public class HandshakeClientController {
         static HandshakeResult fail(String errorMessage) {
             return new HandshakeResult(false, null, errorMessage);
         }
+
         public record OrgNameRequest(String orgName) {}
     }
 }

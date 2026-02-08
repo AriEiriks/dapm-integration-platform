@@ -2,6 +2,7 @@ package com.dapm.security_service.services;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -51,10 +52,22 @@ public class PublicKeysService {
         }
     }
 
+    @Value("${PEER_ORGA_URL:}")
+    private String peerOrgaUrl;
+
+    @Value("${PEER_ORGB_URL:}")
+    private String peerOrgbUrl;
+
     private String buildJwksUrl(String orgId) {
-        System.out.println("http://" + orgId.toLowerCase() + ":8080/.well-known/jwks.json");
-        return "http://" + orgId.toLowerCase() + ":8080/.well-known/jwks.json";
+        String base = switch (orgId.toLowerCase()) {
+            case "orga" -> peerOrgaUrl;   // e.g. http://130.225.70.65:8081
+            case "orgb" -> peerOrgbUrl;   // e.g. http://192.168.8.132:8082
+            default -> throw new IllegalArgumentException("Unknown orgId: " + orgId);
+        };
+
+        return base + "/.well-known/jwks.json";
     }
+
 
     private PublicKey toPublicKey(Jwk jwk) {
         try {

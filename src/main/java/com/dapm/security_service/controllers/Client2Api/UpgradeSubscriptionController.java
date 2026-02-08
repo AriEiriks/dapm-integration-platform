@@ -28,69 +28,80 @@ public class UpgradeSubscriptionController {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${peer.handshake.scheme:http}")
-    private String handshakeScheme;
+    // ✅ Use the same env variables as all other peer calls
+    @Value("${PEER_ORGA_URL:}")
+    private String peerOrgaUrl;
 
-    @Value("${peer.handshake.port:8080}")
-    private int handshakePort;
+    @Value("${PEER_ORGB_URL:}")
+    private String peerOrgbUrl;
 
-    @Value("${peer.handshake.path:/api/peer/upgrade-subscription}")
-    private String handshakePath;
+    @Value("${peer.subscription.path:/api/peer/upgrade-subscription}")
+    private String subscriptionPath;
 
+    // ✅ Build correct URL based on orgName
     private String buildPeerUrl(String orgName) {
-        return String.format("%s://%s:%d%s", handshakeScheme, orgName.toLowerCase(), handshakePort, handshakePath);
+        String base = switch (orgName.toLowerCase()) {
+            case "orga" -> peerOrgaUrl;
+            case "orgb" -> peerOrgbUrl;
+            default -> throw new IllegalArgumentException("Unknown organization: " + orgName);
+        };
+        return base + subscriptionPath;
     }
 
     @PostMapping
     public ResponseEntity<PeerUpgradeResponse> requestSubscriptionUpgrade(@RequestBody SubscriptionRequestDto dto) {
         try {
-            // 1) Generate handshake token
+            // 1) Create handshake token
             String token = tokenService.generateHandshakeToken(300);
             dto.setToken(token);
 
-            // 2) Call peer
+            // 2) Build correct peer URL
             String url = buildPeerUrl(dto.getOrgName());
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<SubscriptionRequestDto> entity = new HttpEntity<>(dto, headers);
 
+            // 3) Call peer
             ResponseEntity<PeerUpgradeResponse> response =
                     restTemplate.postForEntity(url, entity, PeerUpgradeResponse.class);
 
-            // 3) Persist on success
+            // 4) Update DB on success
             if (response.getStatusCode().is2xxSuccessful()
                     && response.getBody() != null
-                    && response.getBody().success) {
-                System.out.println("Subscription upgrade successful: " + response.getBody().message() +
-                        " new tier=" + response.getBody().tier() + " at " + Instant.now());
+                    && response.getBody().success()) {
 
-                PublisherOrganization publisherOrganization = publisherRepository.findByName(dto.getOrgName())
-                        .orElseThrow(() -> new IllegalArgumentException("Partner Organization not found or handshake not completed."));
+                System.out.println("Subscription upgrade successful: " +
+                        response.getBody().message() +
+                        " new tier=" + response.getBody().tier() +
+                        " at " + Instant.now());
+
+                PublisherOrganization publisherOrganization = publisherRepository
+                        .findByName(dto.getOrgName())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Partner Organization not found or handshake not completed."
+                        ));
+
                 publisherOrganization.setTier(response.getBody().tier());
                 publisherOrganization.setMaxHours(response.getBody().maxHours());
                 publisherRepository.save(publisherOrganization);
             }
 
-            // 4) Bubble up the peer’s response as-is
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
 
         } catch (HttpStatusCodeException ex) {
-            // Peer returned 4xx/5xx. Parse its JSON and forward cleanly.
+            // Handle peer error
             String body = ex.getResponseBodyAsString();
             try {
-                // Try to deserialize directly into our record
                 PeerUpgradeResponse parsed = objectMapper.readValue(body, PeerUpgradeResponse.class);
                 return ResponseEntity.status(ex.getStatusCode()).body(parsed);
             } catch (Exception ignored) {
-                // Fallback: pull "message" if available, else a generic message
-                String cleanMessage = extractMessageField(body);
                 return ResponseEntity.status(ex.getStatusCode())
-                        .body(new PeerUpgradeResponse(false, cleanMessage, null, null));
+                        .body(new PeerUpgradeResponse(false, extractMessageField(body), null, null));
             }
         } catch (Exception e) {
-            // Truly unexpected error on our side
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new PeerUpgradeResponse(false, "Unexpected error while upgrading subscription", null, null) );
+                    .body(new PeerUpgradeResponse(false, "Unexpected error while upgrading subscription", null, null));
         }
     }
 
@@ -105,6 +116,10 @@ public class UpgradeSubscriptionController {
         return "Request failed";
     }
 
-    // Internal DTO to match Peer API response
-    static record PeerUpgradeResponse(boolean success, String message, SubscriptionTier tier, Integer maxHours) {}
+    static record PeerUpgradeResponse(
+            boolean success,
+            String message,
+            SubscriptionTier tier,
+            Integer maxHours
+    ) {}
 }

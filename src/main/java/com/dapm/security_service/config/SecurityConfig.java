@@ -57,7 +57,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // React dev server
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://130.225.70.64:3000",   // frontend running on VM1
+                "http://130.225.70.65:3000",   // if NAT maps the web UI
+                "http://localhost:3000",
+                "http://130.225.70.65:*",
+                "http://192.168.8.132:*",
+                "http://130.225.70.66:*"
+        ));
+
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true); // allow cookies/auth headers if needed

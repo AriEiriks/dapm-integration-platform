@@ -76,13 +76,16 @@ services:
     networks:
       - dapm_network
 
+
+
+
   dapm_orga:
     build: .
     container_name: orga
     environment:
       - dapm.defaultOrgName=orgA
-#      - org.private-key: |-
-#          -----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCyYq1G6zwBF/rNfMXa32udFX1NoJOvdF5Z6MI8YPt2firzduGouEvhbV8gLDkvAbOJfNB0ejXmz+uGwJ9jKpZ2G2RJ8hQNt5BR+K6IDei6zR0pcijtx2nTsZ+YA2zdTGe5E9UPksr9SsMnmkPFjDBGiNHDgqTKHG1D9qEhTmdjE7FOLKKwBg/4+3FMOjZ83fj8P5nQrCpfQmBQ23y9HQBbKGSCc448RtMMU0WWDWYdIKikU9OL438HZfV7Bge4NGx4OSjPg70h0BDRSn4hASCldJqhtvPH/y4dXwbJxqSPBk/GziVCCHxlwHxRHhu9NdKZ6KEqLrFvWRyYpMqwc8i/AgMBAAECggEAQ5UI6s5iLFPmbAVyfCqa/adPkqJccWOX/14kgHWJr2m7YgPPGHnCHcSu/mRiwcFWQKdt3kMSusBZDfNaL1rKKDLWewFgwZWi8rtRfDAw1NyyyKn8gaFEIbSwrwnVK74vqbmuxbiqeO3jI9TZCjXDcGWTewu63OuKJe6BOzoWBz2iO88PVEY603IWHX8k39jMP2khQWb4NfifMd9lQU9uOkFxk/7xreaby+Z3F9mEfGZS6qD0Ds3ryQcI0OvrkxJ7o1ianEJJ3zcloajuzbQ8a64qNGQk8E3DGogxHg0U4bO2s0VvXyzzp+nL+TExSUB/4iGKppBw9L/4jte+MPCJOQKBgQD1bGvSfRKbTHCod6VL0qghJf16m8ICTHzvXY47K0OkiTtItlEyAnFXZZFbdZ3BbuxkJoGxkdQmQSXvap5Rwlay0tPSqqbPtWDEr6Rpo6WIRNtXn4VK5WDBHUEPxTN+Ks9fhRN8WbQ0ARdc/jf59BtjVm6cUuHw00dT8tyPga3Y3QKBgQC6EqxwMb0o1UeoPj3ErlaBgTk3kKKAnEOJhoz0Bv17MBh58tWkm34C+2ocNkR630YfQruJCHF/M8fYiIPfv8GCHYgVWqTLrApJaVT+SNiME+cosLy8JqaZC0J6ZF4qNWYQUpiD2GAhneEetzKxaBVcRoDomXIvPVZN6bxXwaZASwKBgGYWVH95EU1SLaaWJkb0+ITZZagjtD76jBmRhAFuzLNbdjKXzAyOYZEmKaGuuhFlT6WVMuunKmVDQkFlyzddLG00L3J5E+xgmUEXgr+Cl++oHMlFDNALvAR4Y8DombPIoPwtwd4+/iuHrK08/hHWDbJzmI0kGOHxMMFly4NSQPttAoGAT0Gi94sIIntuMUiJsNv9dt4fC/7saNGmps6L/Wl40N70ngUEYT/mFckXMnsfAiNWT/xxuvXAukjJB/9mBIk+GHkRvN7GMQbPvuNB06odqtTTcm6NhasE7U1xfIaB4YKrPaqg0g/5KniAKkAoNI68Anj5cZninCKJP1ie49ZVRS8CgYEA69qVMWyJtBVB9ByfBJ2MP7p5srbTv1gNGpr07Uuh+ftl0A2iJheKbvop1UZgyga2kmyeGWtV2HIemvvETziqEX1jLdvKPeeOm7+M0ZjeTMzabOQbPKa/rWpWRSgCt7FGNua60HJ9qoDjI1JD1cU329Qf9Lmt8GzmaFWphOZDx3Y=-----END PRIVATE KEY-----
+      #      - org.private-key: |-
+      #          -----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCyYq1G6zwBF/rNfMXa32udFX1NoJOvdF5Z6MI8YPt2firzduGouEvhbV8gLDkvAbOJfNB0ejXmz+uGwJ9jKpZ2G2RJ8hQNt5BR+K6IDei6zR0pcijtx2nTsZ+YA2zdTGe5E9UPksr9SsMnmkPFjDBGiNHDgqTKHG1D9qEhTmdjE7FOLKKwBg/4+3FMOjZ83fj8P5nQrCpfQmBQ23y9HQBbKGSCc448RtMMU0WWDWYdIKikU9OL438HZfV7Bge4NGx4OSjPg70h0BDRSn4hASCldJqhtvPH/y4dXwbJxqSPBk/GziVCCHxlwHxRHhu9NdKZ6KEqLrFvWRyYpMqwc8i/AgMBAAECggEAQ5UI6s5iLFPmbAVyfCqa/adPkqJccWOX/14kgHWJr2m7YgPPGHnCHcSu/mRiwcFWQKdt3kMSusBZDfNaL1rKKDLWewFgwZWi8rtRfDAw1NyyyKn8gaFEIbSwrwnVK74vqbmuxbiqeO3jI9TZCjXDcGWTewu63OuKJe6BOzoWBz2iO88PVEY603IWHX8k39jMP2khQWb4NfifMd9lQU9uOkFxk/7xreaby+Z3F9mEfGZS6qD0Ds3ryQcI0OvrkxJ7o1ianEJJ3zcloajuzbQ8a64qNGQk8E3DGogxHg0U4bO2s0VvXyzzp+nL+TExSUB/4iGKppBw9L/4jte+MPCJOQKBgQD1bGvSfRKbTHCod6VL0qghJf16m8ICTHzvXY47K0OkiTtItlEyAnFXZZFbdZ3BbuxkJoGxkdQmQSXvap5Rwlay0tPSqqbPtWDEr6Rpo6WIRNtXn4VK5WDBHUEPxTN+Ks9fhRN8WbQ0ARdc/jf59BtjVm6cUuHw00dT8tyPga3Y3QKBgQC6EqxwMb0o1UeoPj3ErlaBgTk3kKKAnEOJhoz0Bv17MBh58tWkm34C+2ocNkR630YfQruJCHF/M8fYiIPfv8GCHYgVWqTLrApJaVT+SNiME+cosLy8JqaZC0J6ZF4qNWYQUpiD2GAhneEetzKxaBVcRoDomXIvPVZN6bxXwaZASwKBgGYWVH95EU1SLaaWJkb0+ITZZagjtD76jBmRhAFuzLNbdjKXzAyOYZEmKaGuuhFlT6WVMuunKmVDQkFlyzddLG00L3J5E+xgmUEXgr+Cl++oHMlFDNALvAR4Y8DombPIoPwtwd4+/iuHrK08/hHWDbJzmI0kGOHxMMFly4NSQPttAoGAT0Gi94sIIntuMUiJsNv9dt4fC/7saNGmps6L/Wl40N70ngUEYT/mFckXMnsfAiNWT/xxuvXAukjJB/9mBIk+GHkRvN7GMQbPvuNB06odqtTTcm6NhasE7U1xfIaB4YKrPaqg0g/5KniAKkAoNI68Anj5cZninCKJP1ie49ZVRS8CgYEA69qVMWyJtBVB9ByfBJ2MP7p5srbTv1gNGpr07Uuh+ftl0A2iJheKbvop1UZgyga2kmyeGWtV2HIemvvETziqEX1jLdvKPeeOm7+M0ZjeTMzabOQbPKa/rWpWRSgCt7FGNua60HJ9qoDjI1JD1cU329Qf9Lmt8GzmaFWphOZDx3Y=-----END PRIVATE KEY-----
 
       - SPRING_DATASOURCE_URL=jdbc:postgresql://dapm_postgres_orga:5432/orga_db
       - SPRING_DATASOURCE_USERNAME=orga_user
@@ -92,18 +95,31 @@ services:
       - runtime.templates.root=/runtime-templates
       - runtime.configs.root=/runtime-configs
       - ORG_KEYSTORE_PATH=/run/keys/signing-keystore.p12
+
       # === point to Kafka inside docker network (NOT localhost) ===
-      - organization.broker.port=kafka-A:9092
+      - organization.broker.port=192.168.8.132:9092
       - PETRINET_OUTPUT_DIR=/runtime-outputs
       - ORG_KEYSTORE_PASS=OrgaPass123
       - ORG_KEY_ALIAS=orga-2025-08
       - ORG_KID=OrgA#2025-08
+      - DAPM_ORGID=orgA
+      - org.signing.keystore.alias=orga-2025-08
+      - dapm.defaultOrgName=orgA
+      - dapm.jwt.kid=OrgA#2025-08
+      - spring.web.cors.allowed-origins=http://dapm2:8081,http://localhost:8081
+      - springdoc.swagger-ui.enabled=true
+      - springdoc.api-docs.enabled=true
+      - org.signing.keystore.password=OrgaPass123
+      - org.signing.keystore.path=/run/keys/signing-keystore.p12
       - SPRING_DATA_MONGODB_URI=mongodb://dapm_user:123456@mongo-orga:27017/dapm_mapping_table?authSource=admin
+      - PEER_ORGB_URL=http://192.168.8.132:8082
+
+
 
     volumes:
       - ./runtime-templates/orga:/runtime-templates
       - ./runtime-configs/orga:/runtime-configs
-        # NEW: host folder for outputs
+      # NEW: host folder for outputs
       - ./outputs/orga:/runtime-outputs
       - ./secrets/orga/signing-keystore.p12:/run/keys/signing-keystore.p12:ro
       - ${DATA_DIR}:/data
@@ -120,8 +136,8 @@ services:
     container_name: orgb
     environment:
       - dapm.defaultOrgName=orgB
-#      - org.private-key: |-
-#          -----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC+sKAeoB8PtV3dxjoiuW4lsOWt9M+c+WYmwfQZeNrqnRG8hmB+xU6TwFKXyVGc8eWj7tB+28LIzWNzia2DO/uFWYhiWVCpLNK48Beeo6U3yQWgBwdmPv/qsh5RBzJPYDSBSoNDRpKAvbOqM2FDwlDosljgK2b9nKgL TB5d8T/RlMV7uHn+cmBBZAm3akH8+WvYFDS0xudFgnY/e4K13CurwkAO6oupOo binkC2ap7jMPUuE9sAQq6d0Z3DpZzS0BVuBMEtT3ziQWQn2Xg5fBg0kWSw0NPZECOVonUel8ZhRAmC02i9Vh3kB2KCrZj69i8LBdGZVw7yYFtLkFz5LM3AgMBAAECggEAIfnH3+Lr8vtJbfZ0g0Xk9M2LmuHckblD8Xo3n1VtSwUBrwdXCP+9nWhmWcb8fC+5uNwTYVHxMQr+PCsmZBvFssGbS3LOK6a6H1ZqFlHXL95euAd+u32XJf4vlt+IRrEJK61+UpPvY3y9+m3bgA9wvWhU5J9u2MzXVeT4Qup2MKCLfRzH1BjObKJAnM0wEt6hRzQwQwLxl4h7P0Wy9R/tdrjqQoJpCpcGkz8ZRvmpQ4XngtiCsjFeqT82Cpa90u3OJzKNHqDaB7wK1LmyIr1qE5/xzB2TTqToHgnFBRoNCHn69V5j/9QhFUwDaBCf86woWgj1C7oAfDtiu5kmV4QKBgQDiM1XNNVIVSk3LOuXgbh75rZ81w2V+TnVzJZk2F2QxeL5oKkdv41IuC7g6oZ4oG2Jle4h1C1vnbC5lK31hvF5vzw3rj4qg6swIf9bAt6wlEzk1yP5e+FYOXN4+E/ZajG5ikF9mfw+PNXbNaCg/EVKwz0oKhnHsGgOv4KbmngYxXQKBgQDOrQbXcUAKKPmpsQF3WfDgrImhU3LqD1p9y98Y2rT0rbd8U2VRk0h/9g6O0hUG6dldAWepKa1cX1ng1BamG0ftbP4KiJqfr5fb4zGyiaB7nn6Wm3mTzJ5ljgkCIMX39psE/Hy+cYbMDZLfYcYd5V1uo+0wWv7N6GGrUt0TX9IbblCQKBgDdTf0oDkg4n3hH/Nk06GvjsaaDAU6cShPoAfYhfSAAO8Y99MT3Pndwq/wOgeuQ3m9su5WzN7PEdby3OSdZqP6aYxekxN7j7DbRkxyLzHbqB4owUpX+mGo5ibBaFcQFkWD2XtMNvKqVuX8P9Y+rkICp8nL3Xyp2uhcQOBMpT8xAoGAQuEZJQf7zw7KthUK8R9QzvFEeVwDZDR9h6RGbTu/6RZp0UHYulFQqX2azWr5CE23hgmH60lMBceVR3QXYAG4QhsJmwvUThFtxlFfttvh+CluY9ixZ0mYaf1mEVWDxXHLp+n+apHSQ2qC37Aox8mXMPM5iO0PyeKp3gzMSFoUoQECgYEA5lazASrbUu9uqBg42gnPqCQG66qOAN46VzXvDlTY3BCMY+xXwX3ApE/3j2Vm6OJfTi+SWjZSWQRM5hBu2Glq91PBnh9eIDwlQ4fr1X7AojunBg8p1FnlSzkK0rTY4DdIuYUEO4jE9FjN4s9Y+FvNphxYctc+9Hg2FwAh6Cc2v5M=-----END PRIVATE KEY-----
+      #      - org.private-key: |-
+      #          -----BEGIN PRIVATE KEY-----MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC+sKAeoB8PtV3dxjoiuW4lsOWt9M+c+WYmwfQZeNrqnRG8hmB+xU6TwFKXyVGc8eWj7tB+28LIzWNzia2DO/uFWYhiWVCpLNK48Beeo6U3yQWgBwdmPv/qsh5RBzJPYDSBSoNDRpKAvbOqM2FDwlDosljgK2b9nKgL TB5d8T/RlMV7uHn+cmBBZAm3akH8+WvYFDS0xudFgnY/e4K13CurwkAO6oupOo binkC2ap7jMPUuE9sAQq6d0Z3DpZzS0BVuBMEtT3ziQWQn2Xg5fBg0kWSw0NPZECOVonUel8ZhRAmC02i9Vh3kB2KCrZj69i8LBdGZVw7yYFtLkFz5LM3AgMBAAECggEAIfnH3+Lr8vtJbfZ0g0Xk9M2LmuHckblD8Xo3n1VtSwUBrwdXCP+9nWhmWcb8fC+5uNwTYVHxMQr+PCsmZBvFssGbS3LOK6a6H1ZqFlHXL95euAd+u32XJf4vlt+IRrEJK61+UpPvY3y9+m3bgA9wvWhU5J9u2MzXVeT4Qup2MKCLfRzH1BjObKJAnM0wEt6hRzQwQwLxl4h7P0Wy9R/tdrjqQoJpCpcGkz8ZRvmpQ4XngtiCsjFeqT82Cpa90u3OJzKNHqDaB7wK1LmyIr1qE5/xzB2TTqToHgnFBRoNCHn69V5j/9QhFUwDaBCf86woWgj1C7oAfDtiu5kmV4QKBgQDiM1XNNVIVSk3LOuXgbh75rZ81w2V+TnVzJZk2F2QxeL5oKkdv41IuC7g6oZ4oG2Jle4h1C1vnbC5lK31hvF5vzw3rj4qg6swIf9bAt6wlEzk1yP5e+FYOXN4+E/ZajG5ikF9mfw+PNXbNaCg/EVKwz0oKhnHsGgOv4KbmngYxXQKBgQDOrQbXcUAKKPmpsQF3WfDgrImhU3LqD1p9y98Y2rT0rbd8U2VRk0h/9g6O0hUG6dldAWepKa1cX1ng1BamG0ftbP4KiJqfr5fb4zGyiaB7nn6Wm3mTzJ5ljgkCIMX39psE/Hy+cYbMDZLfYcYd5V1uo+0wWv7N6GGrUt0TX9IbblCQKBgDdTf0oDkg4n3hH/Nk06GvjsaaDAU6cShPoAfYhfSAAO8Y99MT3Pndwq/wOgeuQ3m9su5WzN7PEdby3OSdZqP6aYxekxN7j7DbRkxyLzHbqB4owUpX+mGo5ibBaFcQFkWD2XtMNvKqVuX8P9Y+rkICp8nL3Xyp2uhcQOBMpT8xAoGAQuEZJQf7zw7KthUK8R9QzvFEeVwDZDR9h6RGbTu/6RZp0UHYulFQqX2azWr5CE23hgmH60lMBceVR3QXYAG4QhsJmwvUThFtxlFfttvh+CluY9ixZ0mYaf1mEVWDxXHLp+n+apHSQ2qC37Aox8mXMPM5iO0PyeKp3gzMSFoUoQECgYEA5lazASrbUu9uqBg42gnPqCQG66qOAN46VzXvDlTY3BCMY+xXwX3ApE/3j2Vm6OJfTi+SWjZSWQRM5hBu2Glq91PBnh9eIDwlQ4fr1X7AojunBg8p1FnlSzkK0rTY4DdIuYUEO4jE9FjN4s9Y+FvNphxYctc+9Hg2FwAh6Cc2v5M=-----END PRIVATE KEY-----
 
       - SPRING_DATASOURCE_URL=jdbc:postgresql://dapm_postgres_orgb:5432/orgb_db
       - SPRING_DATASOURCE_USERNAME=orgb_user
@@ -131,11 +147,21 @@ services:
       - runtime.templates.root=/runtime-templates
       - runtime.configs.root=/runtime-configs
       - ORG_KEYSTORE_PATH=/run/keys/signing-keystore.p12
+      - PEER_ORGA_URL=http://130.225.70.66:8081
       # === point to Kafka inside docker network (NOT localhost) ===
       - organization.broker.port=kafka-B:9082
       - ORG_KEYSTORE_PASS=OrgbPass456
       - ORG_KEY_ALIAS=orgb-2025-08
       - ORG_KID=OrgB#2025-08
+      - spring.web.cors.allowed-origins=http://dapm2:8082,http://localhost:8081
+      - springdoc.swagger-ui.enabled=true
+      - springdoc.api-docs.enabled=true
+      - org.signing.keystore.password=OrgbPass456
+      - dapm.jwt.kid=OrgB#2025-08
+      - DAPM_ORGID=orgB
+      - org.signing.keystore.alias=orgb-2025-08
+      - dapm.defaultOrgName=orgB
+      - org.signing.keystore.path=/run/keys/signing-keystore.p12
       - SPRING_DATA_MONGODB_URI=mongodb://dapm_user:123456@mongo-orgb:27017/dapm_mapping_table
     volumes:
       - ./runtime-templates/orgb:/runtime-templates
