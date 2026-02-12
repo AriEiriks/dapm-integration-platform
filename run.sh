@@ -16,7 +16,7 @@ cd infra
 cd kafka
 
 docker compose -f kafka-orgA.yml -p kafka-orga up -d
-docker compose -f kafka-orgB.yml -p kafka-orgb up -d
+# docker compose -f kafka-orgB.yml -p kafka-orgb up -d
 
 cd ..
 cd ..

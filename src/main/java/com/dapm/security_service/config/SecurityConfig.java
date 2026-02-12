@@ -1,5 +1,6 @@
 package com.dapm.security_service.config;
 
+import org.springframework.http.HttpMethod;
 import com.dapm.security_service.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +36,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+			.requestMatchers(
                                 "/api/auth/authenticate",
                                 "/api/client/pipeline-processingElement/webhook",
                                 "/api/peer/**",
@@ -58,6 +60,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(List.of(
+		"http://dapm1:3000",
+        	"http://dapm1.compute.dtu.dk:3000",
                 "http://130.225.70.64:3000",   // frontend running on VM1
                 "http://130.225.70.65:3000",   // if NAT maps the web UI
                 "http://localhost:3000",

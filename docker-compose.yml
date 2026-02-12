@@ -106,7 +106,7 @@ services:
       - org.signing.keystore.alias=orga-2025-08
       - dapm.defaultOrgName=orgA
       - dapm.jwt.kid=OrgA#2025-08
-      - spring.web.cors.allowed-origins=http://dapm2:8081,http://localhost:8081
+      - spring.web.cors.allowed-origins=http://dapm1:3000,http://dapm2:8081,http://localhost:8081
       - springdoc.swagger-ui.enabled=true
       - springdoc.api-docs.enabled=true
       - org.signing.keystore.password=OrgaPass123

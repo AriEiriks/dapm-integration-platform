@@ -1,0 +1,247 @@
+name: dapm-integration-platform
+services:
+  dapm_orga:
+    build:
+      context: /home/s232409/dapm/dapm-integration-platform
+      dockerfile: Dockerfile
+    container_name: orga
+    depends_on:
+      postgres_orga:
+        condition: service_started
+        required: true
+    environment:
+      DAPM_ORGID: orgA
+      ORG_KEY_ALIAS: orga-2025-08
+      ORG_KEYSTORE_PASS: OrgaPass123
+      ORG_KEYSTORE_PATH: /run/keys/signing-keystore.p12
+      ORG_KID: OrgA#2025-08
+      PEER_ORGB_URL: http://192.168.8.132:8082
+      PETRINET_OUTPUT_DIR: /runtime-outputs
+      SPRING_DATA_MONGODB_URI: mongodb://dapm_user:123456@mongo-orga:27017/dapm_mapping_table?authSource=admin
+      SPRING_DATASOURCE_PASSWORD: orga_pass
+      SPRING_DATASOURCE_URL: jdbc:postgresql://dapm_postgres_orga:5432/orga_db
+      SPRING_DATASOURCE_USERNAME: orga_user
+      dapm.defaultOrgName: orgA
+      dapm.jwt.kid: OrgA#2025-08
+      org.signing.keystore.alias: orga-2025-08
+      org.signing.keystore.password: OrgaPass123
+      org.signing.keystore.path: /run/keys/signing-keystore.p12
+      organization.broker.port: 192.168.8.132:9092
+      runtime.configs.root: /runtime-configs
+      runtime.templates.root: /runtime-templates
+      spring.jpa.hibernate.ddl-auto: update
+      spring.jpa.show-sql: "true"
+      spring.web.cors.allowed-origins: http://dapm2:8081,http://localhost:8081
+      springdoc.api-docs.enabled: "true"
+      springdoc.swagger-ui.enabled: "true"
+    networks:
+      dapm_network: null
+      kafka-cluster: null
+    ports:
+      - mode: ingress
+        target: 8080
+        published: "8081"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /home/s232409/dapm/dapm-integration-platform/runtime-templates/orga
+        target: /runtime-templates
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /home/s232409/dapm/dapm-integration-platform/runtime-configs/orga
+        target: /runtime-configs
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /home/s232409/dapm/dapm-integration-platform/outputs/orga
+        target: /runtime-outputs
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /home/s232409/dapm/dapm-integration-platform/secrets/orga/signing-keystore.p12
+        target: /run/keys/signing-keystore.p12
+        read_only: true
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /home/s232409/dapm/dapm-integration-platform/infra/kafka/data
+        target: /data
+        bind:
+          create_host_path: true
+  dapm_orgb:
+    build:
+      context: /home/s232409/dapm/dapm-integration-platform
+      dockerfile: Dockerfile
+    container_name: orgb
+    depends_on:
+      postgres_orgb:
+        condition: service_started
+        required: true
+    environment:
+      DAPM_ORGID: orgB
+      ORG_KEY_ALIAS: orgb-2025-08
+      ORG_KEYSTORE_PASS: OrgbPass456
+      ORG_KEYSTORE_PATH: /run/keys/signing-keystore.p12
+      ORG_KID: OrgB#2025-08
+      PEER_ORGA_URL: http://130.225.70.66:8081
+      SPRING_DATA_MONGODB_URI: mongodb://dapm_user:123456@mongo-orgb:27017/dapm_mapping_table
+      SPRING_DATASOURCE_PASSWORD: orgb_pass
+      SPRING_DATASOURCE_URL: jdbc:postgresql://dapm_postgres_orgb:5432/orgb_db
+      SPRING_DATASOURCE_USERNAME: orgb_user
+      dapm.defaultOrgName: orgB
+      dapm.jwt.kid: OrgB#2025-08
+      org.signing.keystore.alias: orgb-2025-08
+      org.signing.keystore.password: OrgbPass456
+      org.signing.keystore.path: /run/keys/signing-keystore.p12
+      organization.broker.port: kafka-B:9082
+      runtime.configs.root: /runtime-configs
+      runtime.templates.root: /runtime-templates
+      spring.jpa.hibernate.ddl-auto: update
+      spring.jpa.show-sql: "true"
+      spring.web.cors.allowed-origins: http://dapm2:8082,http://localhost:8081
+      springdoc.api-docs.enabled: "true"
+      springdoc.swagger-ui.enabled: "true"
+    networks:
+      dapm_network: null
+      kafka-cluster: null
+    ports:
+      - mode: ingress
+        target: 8080
+        published: "8082"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /home/s232409/dapm/dapm-integration-platform/runtime-templates/orgb
+        target: /runtime-templates
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /home/s232409/dapm/dapm-integration-platform/runtime-configs/orgb
+        target: /runtime-configs
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /home/s232409/dapm/dapm-integration-platform/secrets/orgb/signing-keystore.p12
+        target: /run/keys/signing-keystore.p12
+        read_only: true
+        bind:
+          create_host_path: true
+  mongo_orga:
+    container_name: mongo-orga
+    environment:
+      MONGO_INITDB_DATABASE: dapm_mapping_table
+      MONGO_INITDB_ROOT_PASSWORD: "123456"
+      MONGO_INITDB_ROOT_USERNAME: dapm_user
+    image: mongo:6
+    networks:
+      dapm_network: null
+    ports:
+      - mode: ingress
+        target: 27017
+        published: "27017"
+        protocol: tcp
+    restart: always
+    volumes:
+      - type: volume
+        source: mongo_orga_data
+        target: /data/db
+        volume: {}
+  mongo_orgb:
+    container_name: mongo-orgb
+    environment:
+      MONGO_INITDB_DATABASE: dapm_mapping_table
+      MONGO_INITDB_ROOT_PASSWORD: "123456"
+      MONGO_INITDB_ROOT_USERNAME: dapm_user
+    image: mongo:6
+    networks:
+      dapm_network: null
+    ports:
+      - mode: ingress
+        target: 27017
+        published: "27018"
+        protocol: tcp
+    restart: always
+    volumes:
+      - type: volume
+        source: mongo_orgb_data
+        target: /data/db
+        volume: {}
+  pgadmin_orga:
+    container_name: pgadmin_orga
+    depends_on:
+      postgres_orga:
+        condition: service_started
+        required: true
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@orga.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    image: dpage/pgadmin4:latest
+    networks:
+      dapm_network: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "8085"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: pgadmin_orga_data
+        target: /var/lib/pgadmin
+        volume: {}
+  postgres_orga:
+    container_name: dapm_postgres_orga
+    environment:
+      POSTGRES_DB: orga_db
+      POSTGRES_PASSWORD: orga_pass
+      POSTGRES_USER: orga_user
+    image: postgres:14
+    networks:
+      dapm_network: null
+    ports:
+      - mode: ingress
+        target: 5432
+        published: "5433"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: orga_data
+        target: /var/lib/postgresql/data
+        volume: {}
+  postgres_orgb:
+    container_name: dapm_postgres_orgb
+    environment:
+      POSTGRES_DB: orgb_db
+      POSTGRES_PASSWORD: orgb_pass
+      POSTGRES_USER: orgb_user
+    image: postgres:14
+    networks:
+      dapm_network: null
+    ports:
+      - mode: ingress
+        target: 5432
+        published: "5434"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: orgb_data
+        target: /var/lib/postgresql/data
+        volume: {}
+networks:
+  dapm_network:
+    name: dapm-integration-platform_dapm_network
+    driver: bridge
+  kafka-cluster:
+    name: kafka-cluster
+    external: true
+volumes:
+  mongo_orga_data:
+    name: dapm-integration-platform_mongo_orga_data
+  mongo_orgb_data:
+    name: dapm-integration-platform_mongo_orgb_data
+  orga_data:
+    name: dapm-integration-platform_orga_data
+  orgb_data:
+    name: dapm-integration-platform_orgb_data
+  pgadmin_orga_data:
+    name: dapm-integration-platform_pgadmin_orga_data
